@@ -25,14 +25,16 @@ services:
     environment:
       - NODE_ENV=development
       - MONGODB_URI=mongodb://mongodb:27017/express-template
+      - JWT_SECRET=dev_jwt_secret_change_in_production
+      - JWT_REFRESH_SECRET=dev_refresh_secret_change_in_production
     depends_on:
       - mongodb
     volumes:
       - .:/app
       - /app/node_modules
+      - /app/dist
     networks:
       - express-network
-    command: npm run dev
 
 volumes:
   mongodb_data:

@@ -1,18 +1,19 @@
-# Express API Template
+# Express API Template with TypeScript
 
-A Express.js API template with best practices for quick development.
+A Express.js API template with TypeScript and best practices for quick development.
 
 ## Features
 
+- **TypeScript** - Full type safety and better developer experience
 - **JWT Authentication** - Secure token-based auth with refresh tokens
-- **MongoDB/Mongoose** - Database integration with schemas
+- **MongoDB/Mongoose** - Database integration with typed schemas
 - **Request Validation** - Express-validator for input validation
 - **Error Handling** - Centralized error handling
 - **Rate Limiting** - Protect against abuse
 - **Logging** - Winston logger with file transports
 - **Security** - Helmet, CORS, bcrypt password hashing
 - **Docker Ready** - Docker Compose setup included
-- **Testing** - Jest configuration included
+- **Testing** - Jest with ts-jest configuration included
 
 ## Quick Start
 
@@ -58,13 +59,15 @@ src/
 ├── config/          # Configuration (database, app settings)
 ├── controllers/     # Request handlers
 ├── middleware/      # Custom middleware (auth, validation, errors)
-├── models/          # Mongoose schemas
+├── models/          # Mongoose schemas with TypeScript interfaces
 ├── routes/          # API routes
 ├── services/        # Business logic
+├── types/           # TypeScript type definitions
 ├── utils/           # Helper functions
 ├── validators/      # Input validation rules
-├── app.js           # Express app setup
-└── server.js        # Entry point
+├── app.ts           # Express app setup
+└── server.ts        # Entry point
+dist/                # Compiled JavaScript (auto-generated)
 ```
 
 ## API Endpoints
@@ -149,10 +152,12 @@ curl "http://localhost:3000/api/v1/products?category=electronics&minPrice=500&pa
 ## Scripts
 
 ```bash
-npm start              # Start production server
-npm run dev            # Start development server with nodemon
+npm run build          # Compile TypeScript to JavaScript
+npm start              # Start production server (from dist/)
+npm run dev            # Start development server with ts-node-dev
 npm test               # Run tests with Jest
 npm run test:watch     # Run tests in watch mode
+npm run typecheck      # Run TypeScript type checking
 npm run docker:up      # Start with Docker Compose
 npm run docker:down    # Stop Docker Compose
 npm run docker:logs    # View Docker logs
@@ -248,68 +253,78 @@ npm test -- --coverage
 
 ## Adding New Features
 
-### 1. Create Model
+### 1. Create Model with Interface
 
-```javascript
-// src/models/YourModel.js
-const mongoose = require("mongoose")
+```typescript
+// src/models/YourModel.ts
+import mongoose, { Document, Schema } from "mongoose"
 
-const schema = new mongoose.Schema({
-  name: { type: String, required: true },
-})
+export interface IYourModel extends Document {
+  name: string
+  createdAt: Date
+  updatedAt: Date
+}
 
-module.exports = mongoose.model("YourModel", schema)
+const schema = new Schema<IYourModel>(
+  {
+    name: { type: String, required: true },
+  },
+  { timestamps: true }
+)
+
+export default mongoose.model<IYourModel>("YourModel", schema)
 ```
 
 ### 2. Create Service
 
-```javascript
-// src/services/your.service.js
-const YourModel = require("../models/YourModel")
+```typescript
+// src/services/your.service.ts
+import YourModel, { IYourModel } from "../models/YourModel"
 
-const create = async (data) => {
+export const create = async (
+  data: Partial<IYourModel>
+): Promise<IYourModel> => {
   return await YourModel.create(data)
 }
-
-module.exports = { create }
 ```
 
 ### 3. Create Controller
 
-```javascript
-// src/controllers/your.controller.js
-const yourService = require("../services/your.service")
-const asyncHandler = require("../utils/asyncHandler")
-const { successResponse } = require("../utils/response")
+```typescript
+// src/controllers/your.controller.ts
+import { Request, Response } from "express"
+import * as yourService from "../services/your.service"
+import asyncHandler from "../utils/asyncHandler"
+import { successResponse } from "../utils/response"
 
-const create = asyncHandler(async (req, res) => {
-  const result = await yourService.create(req.body)
-  successResponse(res, result, "Created successfully", 201)
-})
-
-module.exports = { create }
+export const create = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const result = await yourService.create(req.body)
+    successResponse(res, result, "Created successfully", 201)
+  }
+)
 ```
 
 ### 4. Create Routes
 
-```javascript
-// src/routes/your.routes.js
-const express = require("express")
-const controller = require("../controllers/your.controller")
-const { protect } = require("../middleware/auth")
+```typescript
+// src/routes/your.routes.ts
+import { Router } from "express"
+import * as controller from "../controllers/your.controller"
+import { protect } from "../middleware/auth"
 
-const router = express.Router()
+const router = Router()
 
 router.post("/", protect, controller.create)
 
-module.exports = router
+export default router
 ```
 
 ### 5. Register Routes
 
-```javascript
-// src/routes/index.js
-const yourRoutes = require("./your.routes")
+```typescript
+// src/routes/index.ts
+import yourRoutes from "./your.routes"
 router.use("/yours", yourRoutes)
 ```
 
