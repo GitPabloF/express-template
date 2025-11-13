@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:latest
+    container_name: express-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: express_template
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - express-network
+
+  # Express API
+  api:
+    build: .
+    container_name: express-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongodb:27017/express-template
+    depends_on:
+      - mongodb
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - express-network
+    command: npm run dev
+
+volumes:
+  mongodb_data:
+
+networks:
+  express-network:
+    driver: bridge
+
